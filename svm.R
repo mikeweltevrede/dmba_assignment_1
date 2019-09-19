@@ -12,10 +12,8 @@ import_data = function(path){
   return(data)
 }
 
-## Exercise 2
 train_validation_split = function(train_all, num_samples, training_size=0.75) {
-  
-  #set.seed(42)
+
   sample_indices <- sample(1:nrow(train_all), num_samples)
   training_samples = floor(num_samples*training_size)
   
@@ -50,9 +48,7 @@ grid_search = function(train, validation,
         selected_parameters["C"] = c_scalar
       }
     }
-      
-    
-    
+
     # Check for RBF
     if ("rbfdot" %in% kernels) {
       for (sigma in sigma_vector) {
@@ -61,7 +57,8 @@ grid_search = function(train, validation,
         svm_rbf = kernlab::ksvm(label ~ ., data = train, scaled = F,
                                 kernel = "rbfdot", C = c_scalar,
                                 kpar = list(sigma = sigma))
-        evaluation_rbf = predict(svm_rbf, newdata = validation, type = "response")
+        evaluation_rbf = predict(svm_rbf, newdata = validation,
+                                 type = "response")
         cm_rbf = caret::confusionMatrix(evaluation_rbf, validation$label)
         
         current_accuracy = cm_rbf$overall["Accuracy"]

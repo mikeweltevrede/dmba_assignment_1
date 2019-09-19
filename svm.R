@@ -1,5 +1,5 @@
 ## Import data
-# rm(list = ls())
+rm(list = ls())
 
 library(caret)
 library(kernlab)
@@ -116,14 +116,14 @@ my_svm = function(digit1, digit2, train, num_samples,
   validation = tvs$validation
   
   results = grid_search(train, validation, kernels, c_vector, sigma_vector,
-                        d_vector)
+                        degree_vector)
   
   return(results)
 }
 
 #### Run functions ####
 
-# train = import_data("data/mnist_train.csv")
+train = import_data("data/mnist_train.csv")
 # test = import_data("data/mnist_test.csv")
 
 # testing

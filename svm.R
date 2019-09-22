@@ -144,7 +144,6 @@ for (i in 0:8){
     digit_combo = paste(i, "_",j)
     svms[digit_combo] = my_svm(i, j, train, num_samples = 1000, 
                                c_vector = c_vector, 
-                               sigma_vector = sigma_vector)$svm
     
     print(paste("svm created for", i, "and", j))
   }
@@ -156,7 +155,6 @@ num_rows = dim(test)[1]
 
 labels = test$label
 
-row = 5
 
 for (i in 0:8) {
   for (j in (i+1):9) {

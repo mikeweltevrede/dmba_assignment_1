@@ -63,7 +63,9 @@ create_training_set = function(digit1, digit2, train, num_samples){
   idx_d2 <- which(train$label == digit2)
   
   train_all = train[c(idx_d1,idx_d2), ]
+  train_all$label <- factor(train_all$label) # Reset factor levels -> waarom moest dit ook alweer?
   
+  tvs = train_validation_split(train_all, num_samples) #we gebruiken tvs ook in 78 is dat een probleem?
   
   return(tvs)
 }
@@ -103,11 +105,17 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
 train = import_data("data/mnist_train.csv")
 test = import_data("data/mnist_test.csv")
 
+#TODO: dit moeten we nog op de hele range zetten
+
+#### 1 ####
+
 # testing
-c_vector = 10^(-2:2)
-sigma_vector = 10^(-4:1)
+c_vector = 10^(-3:3)
+sigma_vector = 10^(-8:2)
 
 accuracies = list()
+
+#TODO: eventueel nog via een functie doen
 
 for (other_digit in 0:9) {
   if (other_digit == 5) {
@@ -121,6 +129,8 @@ for (other_digit in 0:9) {
   print(paste("For digit", other_digit, "the accuracy is:", optimal_parameters$optimal_accuracy))
   print("-------------")
   
+  #Willen we hier niet bijprinten met welke C en sigma de accuracy is behaald?
+  
   accuracies[as.character(other_digit)] = optimal_parameters$optimal_accuracy
 }
 
@@ -133,6 +143,7 @@ print(paste("Least similar:", least_similar))
 print(paste("Most similar:", most_similar))
 # TODO: try to see if we can make it recognise multiple maxima (low priority)
 
+
 #### 2. ####
 svms = list()
 
@@ -142,17 +153,20 @@ for (i in 0:8){
     digit_combo = paste(i, "_",j)
     svms[digit_combo] = my_svm(i, j, train, num_samples = 1000, 
                                c_vector = c_vector, 
+                               sigma_vector = sigma_vector)$svm #de grid search moet hier ook nog op TRUE toch?
     
     print(paste("svm created for", i, "and", j))
   }
 }
 
+#print("Accuracy of majority vote system", mean(svms$optimal_accuracy) #ik wil gewoon het gemiddelde pakken van alle accuracies die hierboven berekend zijn, kan dat zo?
 
 
 num_rows = dim(test)[1]
 
 labels = test$label
 
+row = 5 #Why 5?
 
 for (i in 0:8) {
   for (j in (i+1):9) {
@@ -162,15 +176,48 @@ for (i in 0:8) {
     
     svm_test = 3 # TODO
     
+    svm_test = my_svm(i, j, )
+    
     kernlab::predict(svm_test, test[, -1], type="response")
             
   }
 }
 
-kernlab::predict(svm_test, test[, -1], type="response")
+
+
+
 svm_test = my_svm(0, 1, train, num_samples = 1000, 
                   c_vector = 0.1, 
                   sigma_vector = sigma_vector)$svm
 
+kernlab::predict(svm_test, test[, -1], type="response")
+
+
+#### 3 ####
+# hier kunnen we toch gewoon de svms[digit_combo]$accuracy pakken?
+# Want dan hebben we alle accuracies op een rijtje en kunnen we vervolgens 
+# de 3 (bijv.) slechtste en beste pakken toch?
+
+#### 4 #### 
+library(neuralnet)
+
+#TODO krijg hem niet aan de praat
+
+tvs_nn <- train_validation_split(train, num_samples = 1000, training_size = 0.75)
+nn_traindata <- tvs_nn$train
+ann_traindata <- nn_traindata[-1]
+digits = 0:9
+
+for (H in seq(5,20,5)){
+  
+  ann <- neuralnet(digits~01+02, data = nn_traindata, hidden = H, act.fct = "logistic",
+                   linear.output = FALSE) #geen idee of de act.fct handig is
+  
+  plot(ann)
+}
+
+
+  
+  
 
 

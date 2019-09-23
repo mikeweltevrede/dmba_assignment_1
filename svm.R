@@ -63,9 +63,7 @@ create_training_set = function(digit1, digit2, train, num_samples){
   idx_d2 <- which(train$label == digit2)
   
   train_all = train[c(idx_d1,idx_d2), ]
-  train_all$label <- factor(train_all$label) # Reset factor levels
   
-  tvs = train_validation_split(train_all, num_samples)
   
   return(tvs)
 }
@@ -173,4 +171,6 @@ kernlab::predict(svm_test, test[, -1], type="response")
 svm_test = my_svm(0, 1, train, num_samples = 1000, 
                   c_vector = 0.1, 
                   sigma_vector = sigma_vector)$svm
+
+
 

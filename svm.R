@@ -13,7 +13,6 @@ import_data = function(path) {
   return(data)
 }
 
-
 ## Functions
 train_validation_split = function(train_all, num_samples, training_size=0.75) {
   
@@ -257,8 +256,6 @@ for (col in 1:num_cols) {
 # tapply gebruiken?
 boolean_test = (winners == labels)
 acc_mvs = sum(boolean_test) / dim(test)[1]
-
-
 
 
 #### 3 ####

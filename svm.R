@@ -148,7 +148,7 @@ print(paste("Most similar:", most_similar))
 # TODO: try to see if we can make it recognise multiple maxima (low priority)
 
 
-#### 2. ####
+#### 2. ####  ##TODO: probeer 5 hieruit te halen
 svms = list()
 accuracies_ij = list()
 
@@ -176,6 +176,17 @@ for (i in 0:8){
     accuracies_ij[as.character(digit_combo)] = optimal_parameters$optimal_accuracy
   }
 }
+
+num_rows = dim(test)[1]
+labels = test$label
+for (row in 1:num_rows){
+  label = labels[row]
+  for (svm in svms){
+    predict()
+  }
+}
+test
+
 sum_accuracies_ij = do.call(sum, accuracies_ij)
 acc_mvt = sum_accuracies_ij/length(accuracies_ij)
 print(paste("The accuracy of the Majority Vote System is:", acc_mvt))
@@ -189,29 +200,41 @@ labels = test$label
 
 row = 5
 
-for (i in 0:8) {
-  for (j in (i+1):9) {
-    
-    pixels = test[row, -1]
-    digit_combo = paste(i, "_",j)
-    
-    svm_test = 3 # TODO
-    
-    svm_test = my_svm(i, j, )
-    
-    kernlab::predict(svm_test, test[, -1], type="response")
-            
-  }
-}
+
+svms_test = list()
+svms_test["0_1"] =  my_svm(0, 1, train, num_samples = 1000, 
+                           c_vector = 0.1, 
+                           sigma_vector = sigma_vector)$svm
+
+svms_test["0_2"] =  my_svm(0, 2, train, num_samples = 1000, 
+                           c_vector = 0.1, 
+                           sigma_vector = sigma_vector)$svm
+
+svms_test["3_4"] =  my_svm(3, 4, train, num_samples = 1000, 
+                           c_vector = 0.1, 
+                           sigma_vector = sigma_vector)$svm
 
 
 
-
-svm_test = my_svm(0, 1, train, num_samples = 1000, 
+svm_test_02 = my_svm(0, 2, train, num_samples = 1000, 
                   c_vector = 0.1, 
                   sigma_vector = sigma_vector)$svm
 
-kernlab::predict(svm_test, test[, -1], type="response")
+svm_test_34 = my_svm(3, 4, train, num_samples = 1000, 
+                  c_vector = 0.1, 
+                  sigma_vector = sigma_vector)$svm
+
+pred <- kernlab::predict(svm_test, test[, -1], type="response")
+levels(pred) <- levels(labels)
+
+pred == labels
+
+labels = test$label
+
+pred2 <- as.numeric(levels(pred)[as.integer(pred)])
+pred2 == labels
+
+
 
 
 #### 3 ####

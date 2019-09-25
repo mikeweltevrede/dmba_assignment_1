@@ -5,14 +5,16 @@ library(caret)
 library(kernlab)
 library(e1071)
 
-import_data = function(path){
+import_data = function(path) {
+  
   data = read.csv(path, stringsAsFactors = F, header = F)
   names(data)[1] <- "label"
   data$label <- factor(data$label)
   return(data)
 }
 
-train_validation_split = function(train_all, num_samples, training_size=0.75) {
+train_validation_split = function(train_all, num_samples,
+                                  training_size = 0.75) {
 
   sample_indices <- sample(1:nrow(train_all), num_samples)
   training_samples = floor(num_samples*training_size)
@@ -63,9 +65,9 @@ create_training_set = function(digit1, digit2, train, num_samples){
   idx_d2 <- which(train$label == digit2)
   
   train_all = train[c(idx_d1,idx_d2), ]
-  train_all$label <- factor(train_all$label) # Reset factor levels -> waarom moest dit ook alweer?
+  train_all$label <- factor(train_all$label) # Reset factor levels
   
-  tvs = train_validation_split(train_all, num_samples) #we gebruiken tvs ook in 78 is dat een probleem?
+  tvs = train_validation_split(train_all, num_samples)
   
   return(tvs)
 }
@@ -80,7 +82,7 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
   train = tvs$train
   validation = tvs$validation
   
-  if (run_grid_search){
+  if (run_grid_search) {
     results = grid_search(train, validation, c_vector, sigma_vector)
   } else {
     c_scalar = c_vector[1]
@@ -89,7 +91,7 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
     svm = kernlab::ksvm(label ~ ., data = train, scaled = F,
                                    kernel = "rbfdot",
                                    C = c_scalar,
-                                   kpar = list(sigma = sigma), prob.model=TRUE)
+                                   kpar = list(sigma = sigma))
     
     results = list("optimal_accuracy" = NA, 
                    "selected_parameters" = list("C" = c_scalar, 
@@ -117,6 +119,8 @@ accuracies = list()
 
 #TODO: eventueel nog via een functie doen
 
+
+
 for (other_digit in 0:9) {
   if (other_digit == 5) {
     next
@@ -126,7 +130,10 @@ for (other_digit in 0:9) {
                               run_grid_search = TRUE, c_vector = c_vector,
                               sigma_vector = sigma_vector)
   
-  print(paste("For digit", other_digit, "the accuracy is:", optimal_parameters$optimal_accuracy))
+  print(paste("For digit", other_digit,
+              "the accuracy is:", optimal_parameters$optimal_accuracy,
+              ", achieved with C=", optimal_parameters$selected_parameters["C"],
+              "and sigma=", optimal_parameters$selected_parameters["sigma"]))
   print("-------------")
   
   #Willen we hier niet bijprinten met welke C en sigma de accuracy is behaald?
@@ -147,29 +154,27 @@ print(paste("Most similar:", most_similar))
 #### 2. ####
 svms = list()
 
-for (i in 0:8){
-  for (j in (i+1):9){
+for (i in 0:8) {
+  for (j in (i + 1):9) {
     
     digit_combo = paste(i, "_",j)
     svms[digit_combo] = my_svm(i, j, train, num_samples = 1000, 
-                               c_vector = c_vector, 
-                               sigma_vector = sigma_vector)$svm #de grid search moet hier ook nog op TRUE toch?
+                               run_grid_search = TRUE, c_vector = c_vector, 
+                               sigma_vector = sigma_vector)$svm
     
     print(paste("svm created for", i, "and", j))
   }
 }
 
-#print("Accuracy of majority vote system", mean(svms$optimal_accuracy) #ik wil gewoon het gemiddelde pakken van alle accuracies die hierboven berekend zijn, kan dat zo?
+# print("Accuracy of majority vote system", mean(svms$optimal_accuracy)
+#ik wil gewoon het gemiddelde pakken van alle accuracies die hierboven berekend zijn, kan dat zo?
 
 
 num_rows = dim(test)[1]
-
 labels = test$label
 
-row = 5 #Why 5?
-
 for (i in 0:8) {
-  for (j in (i+1):9) {
+  for (j in (i + 1):9) {
     
     pixels = test[row, -1]
     digit_combo = paste(i, "_",j)

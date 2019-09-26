@@ -1,10 +1,12 @@
-## Import data
+#### Prepare environment ####
 rm(list = ls())
 
 library(caret)
 library(kernlab)
 library(e1071)
+library(keras)
 
+#### Define functions ####
 import_data = function(path) {
   
   data = read.csv(path, stringsAsFactors = F, header = F)
@@ -73,7 +75,7 @@ create_training_set = function(digit1, digit2, train, num_samples){
 }
 
 
-# TODO: Change name
+# TODO: Change name?
 my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
                   c_vector = 10^(-3:3), sigma_vector = 10^(-8:2)) {
   
@@ -102,47 +104,84 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
   return(results)
 }
 
-#### Run functions ####
+create_svms = function(train, num_samples, run_grid_search = FALSE,
+                       c_vector = c(), sigma_vector = c(),
+                       parameters = c()) {
+  
+  svms = list()
+  
+  for (i in 0:8) {
+    for (j in (i + 1):9) {
+      
+      print(paste("Creating SVM for", i, "and", j, "..."))
+      
+      digit_combo = paste0(i, "_", j)
+      
+      if (!run_grid_search) {
+        # Then use predefined parameters
+        c_vector = parameters[["C"]][[digit_combo]] # TODO: Check if this works
+        sigma_vector = parameters[["sigma"]][[digit_combo]] # TODO: idem
+      }
+      
+      optimal_svm = my_svm(i, j, train, num_samples = num_samples,
+                           run_grid_search = run_grid_search,
+                           c_vector = c_vector, sigma_vector = sigma_vector)
+      svms[digit_combo] = optimal_svm$svm
+      
+      print(paste("SVM created for", i, "and", j))
+      print(paste("Accuracy:", optimal_svm$optimal_accuracy,
+                  "| Optimal C:", optimal_svm$selected_parameters$C,
+                  "| Optimal sigma:", optimal_svm$selected_parameters$sigma))
+      print("-------------")
+    }
+  }
+  return(svms)
+}
 
+majority_vote = function(svms, test) {
+  
+  preds = list()
+  
+  # This for-loop gets predictions for all 45 SVMs
+  for (i in 0:8) {
+    for (j in (i + 1):9) {
+      
+      digit_combo = paste0(i, "_", j)
+      
+      # kernlab::predict() predicts the entire matrix...
+      prediction = kernlab::predict(svms[[digit_combo]], test[, -1],
+                                    type = "response")
+      
+      # Save the result in a list
+      preds[[digit_combo]] = prediction
+    }
+  }
+  
+  # Unlist these predictions in a matrix for column-wise comparison
+  preds_matrix = matrix(unlist(preds), ncol = dim(test)[1], byrow = TRUE)
+  
+  # Initialise list of winners
+  winners = c()
+  
+  # And retrieve winners from the votes. If there is a tie, the which.max()
+  # function takes the digit that was voted for first.
+  for (col in 1:dim(preds_matrix)[2]) {
+    winner = names(which.max(table(preds_matrix[, col])))
+    winners = c(winners, winner)
+  }
+  
+  return(list("predictions" = preds_matrix, "winners" = winners))
+}
+
+#### Initialise ####
 train = import_data("data/mnist_train.csv")
 test = import_data("data/mnist_test.csv")
 
-#### 1 ####
+labels_train = train$label
+labels_test = test$label
+
 c_vector = 10^(-3:3)
 sigma_vector = 10^(-8:2)
-
-accuracies = list()
-
-#TODO: eventueel nog via een functie doen
-
-for (other_digit in 0:9) {
-  if (other_digit == 5) {
-    next
-  }
-  
-  optimal_parameters = my_svm(5, other_digit, train, num_samples = 1000,
-                              run_grid_search = TRUE, c_vector = c_vector,
-                              sigma_vector = sigma_vector)
-  
-  print(paste("Other digit:", other_digit))
-  print(paste("Accuracy:", optimal_parameters$optimal_accuracy,
-              "Optimal C:", optimal_parameters$selected_parameters$C,
-              "Optimal sigma:", optimal_parameters$selected_parameters$sigma))
-  print("-------------")
-  
-  accuracies[as.character(other_digit)] = optimal_parameters$optimal_accuracy
-}
-
-# TODO: try to see if we can make it recognise multiple maxima (low priority)
-least_similar = accuracies[which.max(accuracies)]
-most_similar = accuracies[which.min(accuracies)]
-
-print(paste("All accuracies:", accuracies))
-print(paste("Least similar:", least_similar))
-print(paste("Most similar:", most_similar))
-
-
-#### 2. ####
 parameters = list(
   "C" = list("0_1" = 1, "0_2" = 1, "0_3" = 10, "0_4" = 100, "0_5" = 1,
              "0_6" = 1, "0_7" = 1, "0_8" = 1, "0_9" = 10, "1_2" = 10,
@@ -169,129 +208,154 @@ parameters = list(
                  "6_7" = 10^(-7), "6_8" = 10^(-6), "6_9" = 10^(-7),
                  "7_8" = 10^(-7), "7_9" = 10^(-6), "8_9" = 10^(-7)))
 
-##TODO: probeer 5 hieruit te halen
-create_svms = function(train, num_samples, run_grid_search = FALSE,
-                       c_vector = c(), sigma_vector = c(),
-                       parameters = c()) {
-  
-  svms = list()
-  
-  for (i in 0:8) {
-    for (j in (i + 1):9) {
-      
-      print(paste("Creating SVM for", i, "and", j, "..."))
-      
-      digit_combo = paste0(i, "_", j)
-      
-      if (!run_grid_search) {
-        # Use predefined parameters
-        c_vector = parameters[["C"]][[digit_combo]] # TODO: Check if this works
-        sigma_vector = parameters[["sigma"]][[digit_combo]] # TODO: idem
-      }
-      
-      optimal_svm = my_svm(i, j, train, num_samples = num_samples,
-                   run_grid_search = run_grid_search,
-                   c_vector = c_vector,
-                   sigma_vector = sigma_vector)
-      svms[digit_combo] = optimal_svm$svm
-      
-      print(paste("SVM created for", i, "and", j))
-      print(paste("Accuracy:", optimal_svm$optimal_accuracy,
-                  "| Optimal C:", optimal_svm$selected_parameters$C,
-                  "| Optimal sigma:", optimal_svm$selected_parameters$sigma))
-      print("-------------")
-    }
-  }
-  return(svms)
-}
-
+#### Support Vector Machines ####
 svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
                    parameters = parameters)
 
-## -----
+#### 1. ####
+# Consider the digit 5. What is the most similar digit to 5? What is the least
+# similar one?
 
-majority_vote = function(svms, test) {
+preds = list()
 
-  preds = list()
-  
-  # This for-loop gets predictions for all 45 SVMs
-  for (i in 0:8) {
-    for (j in (i + 1):9) {
-      
-      digit_combo = paste0(i, "_", j)
-      
-      # kernlab::predict() predicts the entire matrix...
-      prediction = kernlab::predict(svms[[digit_combo]], test[, -1],
-                                    type = "response")
-      
-      # Save the result in a list
-      preds[[digit_combo]] = prediction
-    }
+for (digit in 0:9) {
+  if (digit == 5) {
+    next
   }
   
-  # Unlist these predictions in a matrix for column-wise comparison
-  preds_matrix = matrix(unlist(preds), ncol = dim(test)[1], byrow = TRUE)
-  
-  # Initialise list of winners
-  winners = c()
-  
-  # And retrieve winners from the votes. If there is a tie, say between d1 and
-  # d2, the which.max() function takes the digit that was voted for first.
-  for (col in 1:dim(preds_matrix)[2]) {
-    winner = names(which.max(table(preds_matrix[, col])))
-    winners = c(winners, winner)
+  # Create name to retrieve the corresponding svm
+  if (digit < 5) {
+    digit_combo = paste0(digit, "_", 5)
+  } else {
+    digit_combo = paste0(5, "_", digit)
   }
-
-  return(winners)
+  
+  prediction = kernlab::predict(svms[[digit_combo]], test[, -1],
+                                type = "response")
+  preds[[digit_combo]] = prediction
 }
 
-# tapply gebruiken?
-winners = majority_vote(svms, test)
-score = (winners == test$label)
+# Turn predictions in matrix for easy comparison of accuracy
+preds_matrix = t(matrix(unlist(preds), ncol = dim(test)[1], byrow = TRUE))
+
+for (col in 1:dim(preds_matrix)[2]) {
+  
+  score = (preds_matrix[, col] == data$label)
+  accuracy = sum(score) / dim(test)[1]
+  
+  digits = strsplit(names(preds)[col], "_")[[1]]
+  print(paste("The accuracy of comparing", digits[1], "and", digits[2],
+              "is: ", accuracy))
+  print("---------")
+}
+
+#### Majority Vote ####
+mvs = majority_vote(svms, test)
+predictions = mvs$predictions
+winners = mvs$winners
+
+#### 2. ####
+# What is the accuracy of the majority vote system in this case?
+
+score = (winners == labels_test)
 acc_mvs = sum(score) / dim(test)[1]
 
-#### 3 ####
-# TODO
-# hier kunnen we toch gewoon de svms[digit_combo]$accuracy pakken?
-# Want dan hebben we alle accuracies op een rijtje en kunnen we vervolgens 
-# de 3 (bijv.) slechtste en beste pakken toch?
+print(paste("The accuracy of the MVS is:", acc_mvs))
 
+#### 3. ####
+# Looking at each digit separately, which ones have the best/worst predictions?
+# What are possible reasons?
 
-best_pred_acc_ij = data.frame(accuracies_ij)
-worst_pred_acc_ij = data.frame(accuracies_ij)
-
-#TODO: fix this for loop
-for (i in 1:3){ #print the 3 best prediction (i.e. highest accuracy)
-  best_pred <- do.call(max, best_pred_acc_ij)
-  print(best_pred) #Here I want to print the combination of digits
-  #print(best_pred) #Here I want to print the accuracy of that combination
-  new_best_pred_acc_ij = best_pred_acc_ij[best_pred] <- NULL #here I want to remove the best prediction from the loop
-  best_pred_acc_ij = new_best_pred_acc_ij
+accuracies_mvs = list()
+for (digit in 0:9) {
+  accuracy = sum(score[labels == digit])/length(labels[labels == digit])
+  accuracies_mvs[[as.character(digit)]] = accuracy
 }
 
-##TODO: do the same thing for worst prediction
+print(accuracies_mvs)
 
 
+#### 4. ####
+# Train a neural network with 45 input nodes, one hidden layer with H = 5, 10,
+# 15, or 20 nodes in this layer, and 10 output nodes to obtain a voting system.
+# For each H what is the accuracy of your prediction when using this system?
+# Pick the H performing best.
 
-
-#### 4 #### 
-library(neuralnet)
-
-#TODO krijg hem niet aan de praat
-
-tvs_nn <- train_validation_split(train, num_samples = 1000,
-                                 training_size = 0.75)
-nn_traindata <- tvs_nn$train
-nn_validation <- tvs_nn$validation
-rm(tvs_nn)
-
-ann_traindata <- nn_traindata[-1]
-digits = 0:9
-
-for (H in seq(5,20,5)) {
+create_u_v = function(data, mvs) {
   
-  ann <- neuralnet::neuralnet(digits ~ 01 + 02, data = nn_traindata, hidden = H,
-                              act.fct = "logistic", linear.output = FALSE)
+  predictions = t(mvs$predictions)
+  labels = data$label
+  u_matrix = matrix(as.numeric(predictions == labels), ncol = 45,
+                    byrow = TRUE)
   
-  plot(ann)
+  v = c()
+  for (row in 1:dim(data)[1]) {
+    v_i = rep(0, 10)
+    v_i[data$label[row]] = 1
+    v = c(v, v_i)
+  }
+  
+  v_matrix = matrix(v, ncol = 10, byrow = TRUE)
+  return(list("u" = u_matrix, "v" = v_matrix))
 }
+
+mvs_train = majority_vote(svms, train)
+uv = create_u_v(train, mvs_train)
+u_train = uv$u
+v_train = uv$v
+
+uv = create_u_v(test, mvs)
+u_test = uv$u
+v_test = uv$v
+rm(uv) # Clean up; uv is not needed anymore and only takes up memory
+
+# TODO: Is the interpretation of what u and v are correct? See prints:
+print(head(u_test))
+print(head(v_test))
+
+# TODO: Fix this.
+keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
+                       batch_size=50) {
+  
+  model = keras_model_sequential() %>%
+    layer_dense(
+      units = h,
+      activation = "relu",
+      input_shape = 45
+    ) %>%
+    layer_dense(
+      units = 10,
+      activation = "sigmoid"
+    ) %>%
+    compile(loss = loss_categorical_crossentropy,
+            optimizer = optimizer_adadelta(), metrics = c("accuracy"))
+  
+  history = model %>% fit(
+    u_train, v_train, verbose = 0,
+    batch_size = batch_size,
+    epochs = epochs,
+    validation_split = 0.2
+  )
+  
+  accuracy = evaluate(model, u_test, v_test)$acc
+  
+  return(list("acc" = accuracy, "hist" = history))
+}
+
+H = seq.int(5L, 20L, by = 5L)
+
+for (h in H) {
+  assign(paste("model_", h), keras_model(u_train, v_train, u_test, v_test, h,
+                                         epochs = 30, batch_size = 100))
+}
+
+print(model_5$acc)
+print(model_10$acc)
+print(model_15$acc)
+print(model_20$acc)
+
+plot(model_5$hist)
+plot(model_10$hist)
+plot(model_15$hist)
+plot(model_20$hist)
+

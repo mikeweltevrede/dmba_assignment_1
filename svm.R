@@ -87,8 +87,8 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
   } else {
     # If grid search is not run, take the C=10 and sigma=10^-7 (which we note
     # are the most common options, as derived from an earlier run grid search)
-    c_scalar = 10
-    sigma = 10^(-7)
+    c_scalar = c_vector[1]
+    sigma = sigma_vector[1]
     
     svm = kernlab::ksvm(label ~ ., data = train, scaled = F, kernel = "rbfdot",
                         C = c_scalar, kpar = list(sigma = sigma),
@@ -185,19 +185,20 @@ create_svms = function(train, num_samples, run_grid_search = FALSE,
       
       if (!run_grid_search) {
         # Use predefined parameters
-        c_vector = parameters[["C"]][digit_combo] # TODO: Check if this works
-        sigma_vector = parameters[["sigma"]][digit_combo] # TODO: idem
+        c_vector = parameters[["C"]][[digit_combo]] # TODO: Check if this works
+        sigma_vector = parameters[["sigma"]][[digit_combo]] # TODO: idem
       }
       
-      svms[digit_combo] = my_svm(i, j, train, num_samples = num_samples,
-                                 run_grid_search = run_grid_search,
-                                 c_vector = c_vector,
-                                 sigma_vector = sigma_vector)$svm 
+      optimal_svm = my_svm(i, j, train, num_samples = num_samples,
+                   run_grid_search = run_grid_search,
+                   c_vector = c_vector,
+                   sigma_vector = sigma_vector)
+      svms[digit_combo] = optimal_svm$svm
       
       print(paste("SVM created for", i, "and", j))
-      print(paste("Accuracy:", optimal_parameters$optimal_accuracy,
-                  "Optimal C:", optimal_parameters$selected_parameters$C,
-                  "Optimal sigma:", optimal_parameters$selected_parameters$sigma))
+      print(paste("Accuracy:", optimal_svm$optimal_accuracy,
+                  "| Optimal C:", optimal_svm$selected_parameters$C,
+                  "| Optimal sigma:", optimal_svm$selected_parameters$sigma))
       print("-------------")
     }
   }
@@ -223,12 +224,8 @@ majority_vote = function(svms, test) {
       prediction = kernlab::predict(svms[[digit_combo]], test[, -1],
                                     type = "response")
       
-      # and returns a 0 for the first class (i) and a 1 for the second class (j)
-      prediction[prediction == 0] = i
-      prediction[prediction == 1] = j
-      
       # Save the result in a list
-      preds[digit_combo] = prediction
+      preds[[digit_combo]] = prediction
     }
   }
   
@@ -240,8 +237,8 @@ majority_vote = function(svms, test) {
   
   # And retrieve winners from the votes. If there is a tie, say between d1 and
   # d2, the which.max() function takes the digit that was voted for first.
-  for (col in 1:length(preds_matrix)) {
-    winner = names(which.max(table(preds_matrix[, 1])))
+  for (col in 1:dim(preds_matrix)[2]) {
+    winner = names(which.max(table(preds_matrix[, col])))
     winners = c(winners, winner)
   }
 

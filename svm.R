@@ -291,10 +291,20 @@ print(accuracies_mvs)
 create_u_v = function(data, mvs) {
   
   predictions = t(mvs$predictions)
-  labels = data$label
-  u_matrix = matrix(as.numeric(predictions == labels), ncol = 45,
-                    byrow = TRUE)
+  unique_digits = predictions %>%
+    apply(2, unique) %>%
+    apply(2, sort)
   
+  # Create u matrix
+  for (i in 1:dim(predictions)[2]) {
+    predictions[,i] = predictions[,i] %>%
+      replace(. == unique_digits[1, i], 0) %>%
+      replace(. == unique_digits[2, i], 1)
+  }
+  
+  u_matrix = as.numeric(predictions)
+  
+  # Create v matrix
   v = c()
   for (row in 1:dim(data)[1]) {
     v_i = rep(0, 10)
@@ -351,18 +361,21 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
 
 H = seq.int(5L, 20L, by = 5L)
 
+models = list()
 for (h in H) {
-  assign(paste0("model_", h), keras_model(u_train, v_train, u_test, v_test, h,
-                                         epochs = 30, batch_size = 100))
+  models[[as.character(h)]] = keras_model(u_train, v_train, u_test, v_test, h,
+                                          epochs = 30, batch_size = 100)
 }
 
-print(model_5$acc)
-print(model_10$acc)
-print(model_15$acc)
-print(model_20$acc)
+# Print the accuracies
+for (model in models) {
+  print(names(model))
+  print(model$acc)
+}
 
-plot(model_5$hist)
-plot(model_10$hist)
-plot(model_15$hist)
-plot(model_20$hist)
+# Unfortunately, plots are not shown in a for-loop
+plot(models[["5"]]$hist)
+plot(models[["10"]]$hist)
+plot(models[["15"]]$hist)
+plot(models[["20"]]$hist)
 

@@ -208,16 +208,14 @@ parameters = list(
                  "7_8" = 10^(-7), "7_9" = 10^(-6), "8_9" = 10^(-7)))
 
 #### Support Vector Machines ####
-svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
-                   parameters = parameters)
+if (file.exists("vars/SVMs.RData")) {
+  load("vars/SVMs.RData")
+} else {
+  svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
+                     parameters = parameters)
+  save(svms, parameters, "vars/SVMs.RData")
+}
 
-# For saving the SVMs along with the parameters, uncomment the next two lines
-# rm(list = c("test", "train", "c_vector", "sigma_vector", "labels_test", "labels_train"))
-# save.image("SVMs.RData")
-
-# To load this data again, run the following line:
-# load("SVMs.RData")
-# Then, you don't need to run the call to create_svms()
 
 #### 1. ####
 # Consider the digit 5. What is the most similar digit to 5? What is the least
@@ -290,19 +288,19 @@ print(accuracies_mvs)
 
 create_u_v = function(data, mvs) {
   
-  predictions = t(mvs$predictions)
-  unique_digits = predictions %>%
+  u_matrix = t(mvs$predictions)
+  unique_digits = u_matrix %>%
     apply(2, unique) %>%
     apply(2, sort)
   
   # Create u matrix
-  for (i in 1:dim(predictions)[2]) {
-    predictions[,i] = predictions[,i] %>%
-      replace(. == unique_digits[1, i], 0) %>%
-      replace(. == unique_digits[2, i], 1)
+  for (i in 1:dim(u_matrix)[2]) {
+    u_matrix[,i] = u_matrix[,i] %>%
+      replace(. == unique_digits[1, i], "0") %>%
+      replace(. == unique_digits[2, i], "1")
   }
   
-  u_matrix = as.numeric(predictions)
+  class(u_matrix) <- "numeric"
   
   # Create v matrix
   v = c()
@@ -316,7 +314,14 @@ create_u_v = function(data, mvs) {
   return(list("u" = u_matrix, "v" = v_matrix))
 }
 
-mvs_train = majority_vote(svms, train)
+# Load file, if available
+if (file.exists("vars/MVS.RData")) {
+  load("vars/MVS.RData")  
+} else {
+  mvs_train = majority_vote(svms, train)
+  save(mvs_train, mvs, file = "vars/MVS.RData")
+}
+
 uv = create_u_v(train, mvs_train)
 u_train = uv$u
 v_train = uv$v

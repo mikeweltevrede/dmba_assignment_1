@@ -243,8 +243,8 @@ for (col in 1:dim(preds_matrix)[2]) {
   score = (preds_matrix[, col] == data$label)
   accuracy = sum(score) / dim(test)[1]
   
-  digits = strsplit(names(preds)[col], "_")[[1]]
-  print(paste("The accuracy of comparing", digits[1], "and", digits[2],
+  digits_sep = strsplit(names(preds)[col], "_")[[1]]
+  print(paste("The accuracy of comparing", digits_sep[1], "and", digits_sep[2],
               "is: ", accuracy))
   print("---------")
 }
@@ -345,7 +345,7 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
 H = seq.int(5L, 20L, by = 5L)
 
 for (h in H) {
-  assign(paste("model_", h), keras_model(u_train, v_train, u_test, v_test, h,
+  assign(paste0("model_", h), keras_model(u_train, v_train, u_test, v_test, h,
                                          epochs = 30, batch_size = 100))
 }
 

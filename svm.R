@@ -93,8 +93,7 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
     sigma = sigma_vector[1]
     
     svm = kernlab::ksvm(label ~ ., data = train, scaled = F, kernel = "rbfdot",
-                        C = c_scalar, kpar = list(sigma = sigma),
-                        prob.model = TRUE)
+                        C = c_scalar, kpar = list(sigma = sigma))
     
     results = list("optimal_accuracy" = NA, 
                    "selected_parameters" = list("C" = c_scalar, 
@@ -212,6 +211,14 @@ parameters = list(
 svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
                    parameters = parameters)
 
+# For saving the SVMs along with the parameters, uncomment the next two lines
+# rm(list = c("test", "train", "c_vector", "sigma_vector", "labels_test", "labels_train"))
+# save.image("SVMs.RData")
+
+# To load this data again, run the following line:
+# load("SVMs.RData")
+# Then, you don't need to run the call to create_svms()
+
 #### 1. ####
 # Consider the digit 5. What is the most similar digit to 5? What is the least
 # similar one?
@@ -267,9 +274,9 @@ print(paste("The accuracy of the MVS is:", acc_mvs))
 # What are possible reasons?
 
 accuracies_mvs = list()
-for (digit in 0:9) {
-  accuracy = sum(score[labels == digit])/length(labels[labels == digit])
-  accuracies_mvs[[as.character(digit)]] = accuracy
+for (i in 0:9) {
+  accuracy = sum(score[labels == i])/length(labels[labels == i])
+  accuracies_mvs[[as.character(i)]] = accuracy
 }
 
 print(accuracies_mvs)
@@ -325,9 +332,9 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
     ) %>%
     layer_dense(
       units = 10,
-      activation = "sigmoid"
+      activation = "relu"
     ) %>%
-    compile(loss = loss_categorical_crossentropy,
+    keras::compile(loss = loss_categorical_crossentropy,
             optimizer = optimizer_adadelta(), metrics = c("accuracy"))
   
   history = model %>% fit(

@@ -1,6 +1,6 @@
-data/
 .Rproj.user
 .Rhistory
+.RData
 
-
+data/
 ignore/

@@ -112,29 +112,6 @@ start = proc.time()
 end = proc.time()
 time_mvs_pooled = end - start
 
-# Looking at each digit separately...
-# Original
-start = proc.time()
-  accuracies_mvs = list()
-  for (i in 0:9) {
-    accuracy = sum(
-      score[labels_test == i])/length(labels_test[labels_test == i])
-    accuracies_mvs[[as.character(i)]] = accuracy
-  }
-end = proc.time()
-time_separate_original = end - start
-
-# Original
-start = proc.time()
-  accuracies_mvs_pooled = list()
-  for (i in 0:9) {
-    accuracy = sum(
-      score_pooled[labels_test == i])/length(labels_test[labels_test == i])
-    accuracies_mvs_pooled[[as.character(i)]] = accuracy
-  }
-end = proc.time()
-time_separate_pooled = end - start
-
 print("Times:")
 print("Creating pooled data:")
 print(time_pool_train)
@@ -148,19 +125,18 @@ print("MVS:")
 print(time_mvs_original)
 print(time_mvs_pooled)
 
-print("Separate accuracies:")
-print(time_separate_original)
-print(time_separate_pooled)
+print("Total time:")
+print(paste("Original:", time_creation_original["user.self"]
+            + time_mvs_original["user.self"]))
+print(paste("Pooled:", time_pool_train["user.self"]
+            + time_pool_test["user.self"]
+            + time_creation_pooled["user.self"]
+            + time_mvs_pooled["user.self"]))
 
 print("-----------------")
-print("Accuracies:")
-print("MVS whole:")
-print(acc_mvs)
-print(acc_mvs_pooled)
-
-print("MVS separately:")
-print(accuracies_mvs)
-print(accuracies_mvs_pooled)
+print("Accuracy:")
+print(paste("Original:", acc_mvs))
+print(paste("Pooled:", acc_mvs_pooled))
 
 
 #### Random projection ####

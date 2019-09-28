@@ -95,8 +95,8 @@ time_creation_original <- end - start
 
 # Random Projection
 start <- proc.time()
-svms_pooled = create_svms(train_proj, num_samples = 1000,
-                          run_grid_search = FALSE, parameters = parameters)
+svms_proj = create_svms(train_proj, num_samples = 1000, run_grid_search = FALSE,
+                        parameters = parameters)
 end <- proc.time()
 time_creation_proj = end - start
 

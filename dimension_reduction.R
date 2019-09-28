@@ -18,68 +18,150 @@ library(e1071)
 library(keras)
 
 #### Define functions ####
-import_data = function(path) {
-  
-  data = read.csv(path, stringsAsFactors = F, header = F)
-  names(data)[1] <- "label"
-  data$label <- factor(data$label)
-  return(data)
-}
+source("svm_functions.R")
+source("dimension_reduction_functions.R")
 
-random_projection = function(data) {
-  return(data)
-}
-
-average_pooling = function(image, stride = 4) {
-  
-  # Given a *vector* form image
-  
-  height_image = sqrt(length(image))
-  
-  if (floor(height_image) != height_image) {
-    print(paste("This image is not square. Returning NULL."))
-    return(NULL)
-  }
-  
-  if (height_image %% stride != 0) {
-    print(paste("This stride is not possible. Please pick a stride in the ",
-                "multiplicative table of", sqrt(length(image))))
-    return(NULL)
-  }
-  
-  if (mode(image) != "numeric") {
-    storage.mode(image) <- "numeric"
-  }
-  
-  # Given a row in our data of length 784, we want elements
-  # (r1/r4, c1/c4), (r5/r8, c5/c8), ..., (r25/r28, c25/c28) but then in vector
-  # form: (1/4, 29/32), (1/4, ...)
-  
-  number_of_squares = height_image/stride
-  
-  image_matrix = matrix(image, nrow = height_image, byrow = TRUE)
-  pooled_image = matrix(0, nrow = number_of_squares, ncol = number_of_squares)
-  
-  boundaries = seq(1, height_image, stride)
-  
-  for (i in 1:number_of_squares) {
-    for (j in 1:number_of_squares) {
-      pooled_image[i, j] = mean(
-        image_matrix[boundaries[i]:(boundaries[i] + (stride - 1)),
-                     boundaries[j]:(boundaries[j] + (stride - 1))])
-    }
-  }
-  
-  # Return image as vector
-  pooled_image = as.numeric(pooled_image)
-  
-  return(pooled_image)
-}
-
+#### Initialise ####
 train = import_data("data/mnist_train.csv")
 test = import_data("data/mnist_test.csv")
 
-a = average_pooling(train[1, -1])
+labels_train = data.frame("label" = train$label)
+labels_test = data.frame("label" = test$label)
 
-# To debug - shouldn't need to transpose
-train_pooled = t(apply(train[1:1000, -1], 1, average_pooling))
+#### Average Pooling ####
+# To debug - shouldn't need to transpose outcome?
+start = proc.time()
+train_pooled = train[, -1] %>%
+  apply(1, average_pooling) %>%
+  t() %>%
+  as.data.frame() %>%
+  cbind(labels_train, ., row.names = NULL)
+end = proc.time()
+time_pool_train = end - start
+
+start = proc.time()
+test_pooled = test[, -1] %>%
+  apply(1, average_pooling) %>%
+  t() %>%
+  as.data.frame() %>%
+  cbind(labels_test, ., row.names = NULL)
+end = proc.time()
+time_pool_test = end - start
+
+# Create SVMs
+parameters = list(
+  "C" = list("0_1" = 1, "0_2" = 1, "0_3" = 10, "0_4" = 100, "0_5" = 1,
+             "0_6" = 1, "0_7" = 1, "0_8" = 1, "0_9" = 10, "1_2" = 10,
+             "1_3" = 0.1, "1_4" = 1, "1_5" = 1, "1_6" = 1, "1_7" = 10,
+             "1_8" = 10, "1_9" = 1, "2_3" = 10, "2_4" = 10, "2_5" = 1,
+             "2_6" = 1, "2_7" = 10, "2_8" = 1, "2_9" = 10, "3_4" = 1,
+             "3_5" = 10, "3_6" = 10, "3_7" = 10, "3_8" = 10, "3_9" = 10,
+             "4_5" = 0.1, "4_6" = 0.1, "4_7" = 10, "4_8" = 1, "4_9" = 10,
+             "5_6" = 1, "5_7" = 0.1, "5_8" = 1, "5_9" = 10, "6_7" = 0.1,
+             "6_8" = 1, "6_9" = 0.1, "7_8" = 1, "7_9" = 1, "8_9" = 1),
+  "sigma" = list("0_1" = 10^(-7), "0_2" = 10^(-7), "0_3" = 10^(-7),
+                 "0_4" = 10^(-8), "0_5" = 10^(-6), "0_6" = 10^(-7),
+                 "0_7" = 10^(-7), "0_8" = 10^(-6), "0_9" = 10^(-7),
+                 "1_2" = 10^(-8), "1_3" = 10^(-7), "1_4" = 10^(-7),
+                 "1_5" = 10^(-7), "1_6" = 10^(-7), "1_7" = 10^(-7),
+                 "1_8" = 10^(-7), "1_9" = 10^(-7), "2_3" = 10^(-7),
+                 "2_4" = 10^(-6), "2_5" = 10^(-7), "2_6" = 10^(-7),
+                 "2_7" = 10^(-7), "2_8" = 10^(-6), "2_9" = 10^(-8),
+                 "3_4" = 10^(-7), "3_5" = 10^(-7), "3_6" = 10^(-7),
+                 "3_7" = 10^(-7), "3_8" = 10^(-7), "3_9" = 10^(-7),
+                 "4_5" = 10^(-7), "4_6" = 10^(-7), "4_7" = 10^(-7),
+                 "4_8" = 10^(-7), "4_9" = 10^(-7), "5_6" = 10^(-6),
+                 "5_7" = 10^(-6), "5_8" = 10^(-6), "5_9" = 10^(-7),
+                 "6_7" = 10^(-7), "6_8" = 10^(-6), "6_9" = 10^(-7),
+                 "7_8" = 10^(-7), "7_9" = 10^(-6), "8_9" = 10^(-7)))
+
+# Start the clock for creating SVMs
+# Time original creating function:
+start <- proc.time()
+svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
+                   parameters = parameters)
+end <- proc.time()
+
+time_creation_original <- end - start
+
+start <- proc.time()
+svms_pooled = create_svms(train_pooled, num_samples = 1000,
+                          run_grid_search = FALSE, parameters = parameters)
+end <- proc.time()
+
+time_creation_pooled = end - start
+
+# Majority Vote
+# Original
+start = proc.time()
+  mvs = majority_vote(svms, test)
+  winners = mvs$winners
+
+  score = (winners == labels_test)
+  acc_mvs = sum(score) / dim(test)[1]
+end = proc.time()
+time_mvs_original = end - start
+
+# MVS for pooled
+start = proc.time()
+  mvs_pooled = majority_vote(svms_pooled, test_pooled)
+  winners_pooled = mvs_pooled$winners
+  
+  score_pooled = (winners == labels_test)
+  acc_mvs_pooled = sum(score_pooled) / dim(test_pooled)[1]
+end = proc.time()
+time_mvs_pooled = end - start
+
+# Looking at each digit separately...
+# Original
+start = proc.time()
+  accuracies_mvs = list()
+  for (i in 0:9) {
+    accuracy = sum(
+      score[labels_test == i])/length(labels_test[labels_test == i])
+    accuracies_mvs[[as.character(i)]] = accuracy
+  }
+end = proc.time()
+time_separate_original = end - start
+
+# Original
+start = proc.time()
+  accuracies_mvs_pooled = list()
+  for (i in 0:9) {
+    accuracy = sum(
+      score_pooled[labels_test == i])/length(labels_test[labels_test == i])
+    accuracies_mvs_pooled[[as.character(i)]] = accuracy
+  }
+end = proc.time()
+time_separate_pooled = end - start
+
+print("Times:")
+print("Creating pooled data:")
+print(time_pool_train)
+print(time_pool_test)
+
+print("Creating SVMs:")
+print(time_creation_original)
+print(time_creation_pooled)
+
+print("MVS:")
+print(time_mvs_original)
+print(time_mvs_pooled)
+
+print("Separate accuracies:")
+print(time_separate_original)
+print(time_separate_pooled)
+
+print("-----------------")
+print("Accuracies:")
+print("MVS whole:")
+print(acc_mvs)
+print(acc_mvs_pooled)
+
+print("MVS separately:")
+print(accuracies_mvs)
+print(accuracies_mvs_pooled)
+
+
+#### Random projection ####
+

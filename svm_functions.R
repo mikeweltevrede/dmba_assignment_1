@@ -78,8 +78,7 @@ my_svm = function(digit1, digit2, train, num_samples, run_grid_search = FALSE,
   if (run_grid_search) {
     results = grid_search(train, validation, c_vector, sigma_vector)
   } else {
-    # If grid search is not run, take the C=10 and sigma=10^-7 (which we note
-    # are the most common options, as derived from an earlier run grid search)
+    # If grid search is not run, take predefined parameters
     c_scalar = c_vector[1]
     sigma = sigma_vector[1]
     

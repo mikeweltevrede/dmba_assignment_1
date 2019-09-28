@@ -120,7 +120,7 @@ time_mvs_original = end - start
 
 # Random Projection
 start = proc.time()
-mvs_proj = majority_vote(svms, test_proj)
+mvs_proj = majority_vote(svms_proj, test_proj)
 winners_proj = mvs_proj$winners
 
 score_proj = (winners_proj == labels_test)

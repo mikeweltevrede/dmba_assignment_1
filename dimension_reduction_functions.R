@@ -1,7 +1,7 @@
-average_pooling = function(image, stride = 4) {
+average_pooling = function(img, stride = 4) {
   
   # Define the height of the image (vector) in matrix form
-  height_image = sqrt(length(image))
+  height_image = sqrt(length(img))
   
   # We need the image to be square
   if (floor(height_image) != height_image) {
@@ -12,19 +12,19 @@ average_pooling = function(image, stride = 4) {
   # We need the stride to fit exactly into the image size
   if (height_image %% stride != 0) {
     print(paste("This stride is not possible. Please pick a stride in the ",
-                "multiplicative table of", sqrt(length(image))))
+                "multiplicative table of", height_image))
     return(NULL)
   }
   
   # We could have a mode that is "list". To support proper application of the
   # mean function, we need the image to be a numeric vector instead.
-  if (mode(image) != "numeric") {
-    storage.mode(image) <- "numeric"
+  if (mode(img) != "numeric") {
+    storage.mode(img) <- "numeric"
   }
   
   number_of_squares = height_image/stride
   
-  image_matrix = matrix(image, nrow = height_image, byrow = TRUE)
+  image_matrix = matrix(img, nrow = height_image, byrow = TRUE)
   pooled_image = matrix(0, nrow = number_of_squares, ncol = number_of_squares)
   
   boundaries = seq(1, height_image, stride)
@@ -45,5 +45,17 @@ average_pooling = function(image, stride = 4) {
 }
 
 random_projection = function(data) {
-  return(data)
+  
+  X = as.matrix(data[,-1])
+  
+  random_matrix = RandPro::form_matrix(dim(X)[2],
+                                       RandPro::dimension(dim(X)[2],
+                                                          epsilon = 0.5),
+                                       JLT = TRUE, eps = 0.5)
+  reduced_data = X %*% random_matrix %>%
+    cbind(data.frame("label" = data$label), .)
+  
+  return(reduced_data)
 }
+
+

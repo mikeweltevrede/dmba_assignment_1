@@ -73,16 +73,16 @@ if (file.exists(path_to_svm)) {
 
 preds = list()
 
-for (digit in 0:9) {
-  if (digit == 5) {
+for (dgt in 0:9) {
+  if (dgt == 5) {
     next
   }
   
   # Create name to retrieve the corresponding svm
-  if (digit < 5) {
-    digit_combo = paste0(digit, "_", 5)
+  if (dgt < 5) {
+    digit_combo = paste0(dgt, "_", 5)
   } else {
-    digit_combo = paste0(5, "_", digit)
+    digit_combo = paste0(5, "_", dgt)
   }
   
   prediction = kernlab::predict(svms[[digit_combo]], test[, -1],

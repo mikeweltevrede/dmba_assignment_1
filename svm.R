@@ -85,8 +85,17 @@ for (dgt in 0:9) {
     digit_combo = paste0(5, "_", dgt)
   }
   
+  evaluate = test[c(which(test$label == 5), which(test$label == dgt)), ]
+  evaluate$label = factor(evaluate$label)
+  
   prediction = kernlab::predict(svms[[digit_combo]], test[, -1],
                                 type = "response")
+  cm = caret::confusionMatrix(predict(svms[[digit_combo]],
+                                      newdata = evaluate, type = "response"),
+                              evaluate$label)
+  print(paste("Accuracy from CM for", digit_combo, ":",
+              cm$overall[["Accuracy"]]))
+  
   preds[[digit_combo]] = prediction
 }
 

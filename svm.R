@@ -19,8 +19,8 @@ labels_test = test$label
 c_vector = 10^(seq(-2, 2, length.out = 9))
 sigma_vector = 10^(seq(-8, -6, length.out = 5))
 
-num_samples = 7500
-run_grid_search = TRUE
+num_samples = 1000
+run_grid_search = FALSE
 
 path_to_svm = "vars/SVMs.RData"
 path_to_mvs = "vars/MVS.RData"
@@ -152,18 +152,11 @@ if (file.exists(path_to_mvs)) {
   save(mvs_train, mvs, file = path_to_mvs)
 }
 
-uv = create_u_v(train, mvs_train)
-u_train = uv$u
-v_train = uv$v
+v_train = create_v(train)
+u_train = create_u(mvs_train)
 
-uv = create_u_v(test, mvs)
-u_test = uv$u
-v_test = uv$v
-rm(uv) # Clean up; uv is not needed anymore and only takes up memory
-
-# TODO: Is the interpretation of what u and v are correct? See prints:
-print(head(u_test))
-print(head(v_test))
+v_test = create_v(test)
+u_test = create_u(mvs)
 
 # TODO: Fix this. -> And put to SVM functions
 keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
@@ -171,9 +164,13 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
   
   model = keras_model_sequential() %>%
     layer_dense(
-      units = h,
+      units = 45,
       activation = "relu",
       input_shape = 45
+    ) %>%
+    layer_dense(
+      units = h,
+      activation = "relu"
     ) %>%
     layer_dense(
       units = 10,
@@ -183,23 +180,30 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
             optimizer = optimizer_adadelta(), metrics = c("accuracy"))
   
   history = model %>% fit(
-    u_train, v_train, verbose = 0,
+    x = u_train, y = v_train, verbose = 2,
     batch_size = batch_size,
-    epochs = epochs,
+    epochs = epochs, view_metrics = TRUE,
     validation_split = 0.2
   )
   
-  accuracy = evaluate(model, u_test, v_test)$acc
+  accuracy = evaluate(model, x = u_test, y = v_test)$acc
   
   return(list("acc" = accuracy, "hist" = history))
 }
+
+# Testing:
+epochs = 20
+batch_size = dim(u_train)[1] / epochs
+m = keras_model(u_train, v_train, u_test, v_test, h = 20, epochs = 15,
+                batch_size = 2000)
+
 
 H = seq.int(5L, 20L, by = 5L)
 
 models = list()
 for (h in H) {
   models[[as.character(h)]] = keras_model(u_train, v_train, u_test, v_test, h,
-                                          epochs = 30, batch_size = 100)
+                                          batch_size = 100)
 }
 
 # Print the accuracies

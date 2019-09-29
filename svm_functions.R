@@ -163,21 +163,7 @@ majority_vote = function(svms, test) {
   return(list("predictions" = preds_matrix, "winners" = winners))
 }
 
-create_u_v = function(data, mvs) {
-  
-  u_matrix = t(mvs$predictions)
-  unique_digits = u_matrix %>%
-    apply(2, unique) %>%
-    apply(2, sort)
-  
-  # Create u matrix
-  for (i in 1:dim(u_matrix)[2]) {
-    u_matrix[,i] = u_matrix[,i] %>%
-      replace(. == unique_digits[1, i], "0") %>%
-      replace(. == unique_digits[2, i], "1")
-  }
-  
-  class(u_matrix) <- "numeric"
+create_v = function(data) {
   
   # Create v matrix
   v = c()
@@ -188,5 +174,23 @@ create_u_v = function(data, mvs) {
   }
   
   v_matrix = matrix(v, ncol = 10, byrow = TRUE)
-  return(list("u" = u_matrix, "v" = v_matrix))
+  return(v_matrix)
+}
+
+create_u = function(mvs) {
+  
+  u_matrix = mvs$predictions
+  unique_digits = u_matrix %>%
+    apply(1, unique) %>%
+    apply(2, sort)
+  
+  # Create u matrix
+  for (i in 1:dim(u_matrix)[1]) {
+    u_matrix[i, ] = u_matrix[i, ] %>%
+      replace(. == unique_digits[1, i], "0") %>%
+      replace(. == unique_digits[2, i], "1")
+  }
+  
+  class(u_matrix) <- "numeric"
+  return(t(u_matrix))
 }

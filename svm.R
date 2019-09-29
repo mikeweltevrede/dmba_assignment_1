@@ -138,7 +138,6 @@ for (i in 0:9) {
 
 print(accuracies_mvs)
 
-
 #### 4. ####
 # Train a neural network with 45 input nodes, one hidden layer with H = 5, 10,
 # 15, or 20 nodes in this layer, and 10 output nodes to obtain a voting system.

@@ -9,6 +9,7 @@ import_data = function(path) {
 ## Functions
 train_validation_split = function(train_all, num_samples, training_size=0.75) {
   
+  set.seed(42)
   sample_indices <- sample(1:nrow(train_all), num_samples)
   training_samples = floor(num_samples*training_size)
   

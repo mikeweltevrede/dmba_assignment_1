@@ -114,6 +114,7 @@ for (col in 1:dim(preds_matrix)[2]) {
 }
 
 #### Majority Vote ####
+# TODO: Split the predictions and voting part, since exercise 4 only needs the preds
 mvs = majority_vote(svms, test)
 predictions = mvs$predictions
 winners = mvs$winners
@@ -159,8 +160,8 @@ v_test = create_v(test)
 u_test = create_u(mvs)
 
 # TODO: Fix this. -> And put to SVM functions
-keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
-                       batch_size=50, verbose = 2) {
+keras_model = function(u_train, v_train, u_test, v_test, h, epochs,
+                       batch_size = 32, verbose = 2) {
   
   model = keras_model_sequential() %>%
     layer_dense(
@@ -173,18 +174,19 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs=20,
       activation = "softmax"
     ) %>%
     keras::compile(loss = loss_categorical_crossentropy,
-            optimizer = optimizer_adadelta(), metrics = c("accuracy"))
+                   optimizer = optimizer_adam(), metrics = c("accuracy"))
   
   history = model %>% fit(
-    x = u_train, y = v_train, verbose = verbose,
+    x = u_train, y = v_train,
     batch_size = batch_size,
     epochs = epochs,
-    validation_split = 0.2
+    validation_split = 0.2,
+    verbose = verbose, view_metrics = FALSE
   )
   
   accuracy = evaluate(model, x = u_test, y = v_test)$acc
   
-  return(list("acc" = accuracy, "hist" = history))
+  return(list("model" = model, "history" = history, "accuracy" = accuracy))
 }
 
 models = list()
@@ -195,20 +197,21 @@ for (h in seq.int(5L, 20L, by = 5L)) {
 
 # Print the accuracies
 for (model in models) {
-  print(model$acc)
+  print(model$history)
+  print(model$accuracy)
 }
 
 # Unfortunately, plots are not shown in a for-loop
-plot(models[["5"]]$hist)
-plot(models[["10"]]$hist)
-plot(models[["15"]]$hist)
-plot(models[["20"]]$hist)
+plot(models[["5"]]$history)
+plot(models[["10"]]$history)
+plot(models[["15"]]$history)
+plot(models[["20"]]$history)
 
 # We see that the accuracy for H=15 and H=20 is the best, with 0.9776 and 0.978
 # respectively. We also saw that the models started to overfit at around 12
 # epochs, with a batch-size of 32. To make this better, we do a grid search.
 H = c(15, 20)
-epochs = c(11, 12, 13)
+epochs = c(11, 12)
 batch_sizes = c(32, 64, 128)
 
 models = list()
@@ -216,9 +219,9 @@ for (h in H) {
   for (epoch in epochs) {
     for (batch_size in batch_sizes) {
       print(paste("H:", h, "| Epochs:", epoch, "| Batch size:", batch_size))
-      title = paste0()
-      models[[title]] = keras_model(u_train, v_train, u_test, v_test, h,
-                                    epochs = epochs, batch_size = batch_size)
+      title = paste0(h, "_", epoch, "_", batch_size)
+      models[[title]] = keras_model(u_train, v_train, u_test, v_test, h = h,
+                                    epochs = epoch, batch_size = batch_size)
     }
   }
 }

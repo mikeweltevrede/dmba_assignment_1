@@ -58,7 +58,7 @@ parameters = list(
                  "6_7" = 10^(-6), "6_8" = 10^(-6.5), "6_9" = 10^(-6.5),
                  "7_8" = 10^(-6.5), "7_9" = 10^(-6.5), "8_9" = 10^(-6.5)))
 
-#### Random Projection ####
+#### Create Random Projection ####
 start = proc.time()
 train_proj = random_projection(train)
 end = proc.time()
@@ -69,7 +69,7 @@ test_proj = random_projection(test)
 end = proc.time()
 time_proj_test = end - start
 
-#### Average Pooling ####
+#### Create Average Pooling ####
 start = proc.time()
 train_pooled = train[, -1] %>%
   apply(1, average_pooling) %>%
@@ -88,7 +88,7 @@ test_pooled = test[, -1] %>%
 end = proc.time()
 time_pool_test = end - start
 
-#### Time: Create SVMs ####
+#### Create SVMs ####
 # Original
 start <- proc.time()
 svms = create_svms(train, num_samples = num_samples, run_grid_search = FALSE,
@@ -110,7 +110,7 @@ svms_pooled = create_svms(train_pooled, num_samples = num_samples,
 end <- proc.time()
 time_creation_pooled = end - start
 
-#### Time: Cast and Count Votes ####
+#### Majority Voting ####
 # Original
 start = proc.time()
 mvs = majority_vote(svms, test)
@@ -141,7 +141,7 @@ acc_mvs_pooled = sum(score_pooled) / dim(test_pooled)[1]
 end = proc.time()
 time_mvs_pooled = end - start
 
-# Print times
+#### Print times ####
 print("Times:")
 print("Creating randomly projected data:")
 print(paste("Train:", time_proj_train["user.self"]))
@@ -173,7 +173,7 @@ print(paste("Average Pooling:", time_pool_train["user.self"]
             + time_creation_pooled["user.self"]
             + time_mvs_pooled["user.self"]))
 
-print("-----------------")
+#### Print Accuracies ####
 print("Accuracy MVS:")
 print(paste("Original:", acc_mvs))
 print(paste("Random Projection:", acc_mvs_proj))
@@ -199,8 +199,7 @@ for (i in 0:9) {
 }
 
 print("Individual accuracies:")
-accuracies_separate = rbind(unlist(accuracies_mvs), 
-                            unlist(accuracies_mvs_proj),
-                            unlist(accuracies_mvs_pooled))
-rownames(accuracies_separate) = c("Original", "Random Projection", "Average Pooling")
+accuracies_separate = rbind("Original" = unlist(accuracies_mvs), 
+                            "Random Projection" = unlist(accuracies_mvs_proj),
+                            "Average Pooling" = unlist(accuracies_mvs_pooled))
 print(accuracies_separate)

@@ -95,7 +95,7 @@ preds_matrix = t(matrix(unlist(preds), ncol = dim(test)[1], byrow = TRUE))
 
 for (col in 1:dim(preds_matrix)[2]) {
   
-  score = (preds_matrix[, col] == data$label)
+  score = (preds_matrix[, col] == test$label)
   accuracy = sum(score) / dim(test)[1]
   
   digits_sep = strsplit(names(preds)[col], "_")[[1]]

@@ -5,6 +5,7 @@ library(caret)
 library(kernlab)
 library(e1071)
 library(neuralnet)
+library(autoencoder)
 library(keras)
 
 import_data = function(path){
@@ -134,12 +135,39 @@ encoder_model %>% compile(
   metrics = c('accuracy')
 )
 
-#how did the encoder model do?
-#embeded_points <- 
-  #encoder_model %>% 
- # keras::predict_on_batch(x = train_x)
 
-#embeded_points %>% head
+## From here I still need to fix the code to our example
+#how did the encoder model do (compare to pca)?
+embeded_points <- 
+  encoder_model %>% 
+  keras::predict_on_batch(x = train_x)
+
+embeded_points %>% head
+
+#pca
+pre_process <- caret::preProcess(train_x,method = "pca",pcaComp = 2)
+
+pca <- predict(pre_process,train_x)
+
+pca %>% head
+
+Viz_data_encoded <- 
+  dplyr::bind_rows(
+    pca %>% 
+      tibble::as_tibble() %>% 
+      setNames(c("dim_1","dim_2")) %>% 
+      dplyr::mutate(data_origin = "pca",
+                    Species = train$Species),
+    embeded_points %>% 
+      tibble::as_tibble() %>% 
+      setNames(c("dim_1","dim_2")) %>% 
+      dplyr::mutate(data_origin = "embeded_points",
+                    Species = train$Species)
+  )
+
+Viz_data_encoded %>% 
+  ggplot(aes(dim_1,dim_2, color = data_origin))+
+  geom_point()
 
 #measure prediction accuracy
 benchmark <- 
@@ -152,4 +180,26 @@ benchmark <-
   # unnest(performance,.drop = FALSE)
   mutate(model_caret = data %>% map(~caret::train(form = Species~.,data = .x,method = "rf")))
 
+
+##Start of 5 by using the autoencoder(trial 2)
+
+nl=3 ## number of layers (default is 3: input, hidden, output)
+unit.type = "logistic" ## specify the network unit type, i.e., the unit's
+## activation function ("logistic" or "tanh")
+N.input = 784 ## number of units (neurons) in the input layer (one unit per pixel)
+N.hidden = 200 ## number of units in the hidden layer
+lambda = 0.0002 ## weight decay parameter
+beta = 6 ## weight of sparsity penalty term
+rho = 0.01 ## desired sparsity parameter
+epsilon <- 0.001 ## a small parameter for initialization of weights
+## as small gaussian random numbers sampled from N(0,epsilon^2)
+max.iterations = 2000 ## number of iterations in optimizer
+## Train the autoencoder on training.matrix using BFGS optimization method
+## (see help('optim') for details):
+## WARNING: the training can take as long as 20 minutes for this dataset!
+## Not run:
+autoencoder.object <- autoencode(X.train=training.matrix,nl=nl,N.hidden=N.hidden,
+                                 unit.type=unit.type,lambda=lambda,beta=beta,rho=rho,epsilon=epsilon,
+                                 optim.method="BFGS",max.iterations=max.iterations,
+                                 rescale.flag=TRUE,rescaling.offset=0.001)
 

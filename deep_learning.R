@@ -44,7 +44,7 @@ validation1 <- train[sample_indices[(training_samples + 1):num_samples], ]
 
 #pre-process
 train_x <- train1[,2:785] %>% as.matrix()
-train_y <- train[1,1] %>% 
+train_y <- train1[,1] %>%
   keras::to_categorical()
 
 test_x <- validation1[,2:785] %>% as.matrix()
@@ -58,13 +58,15 @@ encoder <-
   layer_dense(units = 200, activation = "relu") %>% 
   layer_batch_normalization() %>% 
   layer_dropout(rate = 0.2) %>% 
-  layer_dense(units = 45, activation = "relu")  # 45 dimensions for the output layer
+  layer_dense(units = 45, activation = "relu")
 
 decoder <- 
   encoder %>% 
-  layer_dense(units = 200, activation = "relu") %>% 
+  layer_dense(units = 200, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>% 
-  layer_dense(units = 784, activation = "relu") # 784 dimensions for the original 4 variables
+  layer_dense(units = 784, activation = "relu")
+# ik heb verschillende unit combinaties gebruikt (ook met meer or minder layers),
+# maar bij geen van allen krijg ik iets (goed) werkends :(
 
 #create the autoencoder
 autoencoder_model <- keras_model(inputs = input_layer, outputs = decoder)
@@ -108,7 +110,7 @@ Viz_data <-
   )
 
 Viz_data %>%
-  ggplot(aes('Petal.Length','Sepal.Width', color = data_origin))+
+  ggplot(aes('x','y', color = data_origin))+
   geom_point()
 
 #autoencoder weights
@@ -127,7 +129,8 @@ keras::save_model_weights_hdf5(object = autoencoder_model,
 encoder_model <- keras_model(inputs = input_layer, outputs = encoder)
 
 encoder_model %>% keras::load_model_weights_hdf5(filepath = "C:/Users/Daniel/Universiteit_nieuw/Master BAOR/DMBA (Business Analytics)/autoencoder_weights.hdf5",
-                                                 skip_mismatch = TRUE,by_name = TRUE)
+                                                 skip_mismatch = TRUE,
+                                                 by_name = TRUE)
 
 encoder_model %>% compile(
   loss='mean_squared_error',
@@ -136,7 +139,11 @@ encoder_model %>% compile(
 )
 
 
-## From here I still need to fix the code to our example
+
+
+
+
+## Vanaf hier zijn het verschillende probeerseltjes (deze kun je allemaal negeren)
 #how did the encoder model do (compare to pca)?
 embeded_points <- 
   encoder_model %>% 
@@ -202,4 +209,12 @@ autoencoder.object <- autoencode(X.train=training.matrix,nl=nl,N.hidden=N.hidden
                                  unit.type=unit.type,lambda=lambda,beta=beta,rho=rho,epsilon=epsilon,
                                  optim.method="BFGS",max.iterations=max.iterations,
                                  rescale.flag=TRUE,rescaling.offset=0.001)
+
+
+##Start of 5 by using h2o (trial 3)
+library(h2o)
+
+
+
+
 

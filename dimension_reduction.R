@@ -26,7 +26,6 @@ source("dimension_reduction_functions.R")
 train = import_data("data/mnist_train.csv")
 test = import_data("data/mnist_test.csv")
 
-labels_train = data.frame("label" = train$label)
 labels_test = data.frame("label" = test$label)
 
 num_samples = 7500
@@ -76,7 +75,7 @@ train_pooled = train[, -1] %>%
   apply(1, average_pooling) %>%
   t() %>%
   as.data.frame() %>%
-  cbind(labels_train, ., row.names = NULL)
+  cbind(data.frame("label" = train$label), ., row.names = NULL)
 end = proc.time()
 time_pool_train = end - start
 
@@ -85,7 +84,7 @@ test_pooled = test[, -1] %>%
   apply(1, average_pooling) %>%
   t() %>%
   as.data.frame() %>%
-  cbind(labels_test, ., row.names = NULL)
+  cbind(data.frame("label" = test$label), ., row.names = NULL)
 end = proc.time()
 time_pool_test = end - start
 

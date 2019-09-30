@@ -1,3 +1,18 @@
+random_projection = function(data, epsilon = 0.5) {
+  
+  X = as.matrix(data[, -1])
+  
+  set.seed(42)
+  random_matrix = RandPro::form_matrix(dim(X)[2],
+                                       RandPro::dimension(dim(X)[2],
+                                                          epsilon = epsilon),
+                                       JLT = TRUE, eps = epsilon)
+  reduced_data = X %*% random_matrix %>%
+    cbind(data.frame("label" = data$label), .)
+  
+  return(reduced_data)
+}
+
 average_pooling = function(img, stride = 4) {
   
   # Define the height of the image (vector) in matrix form
@@ -43,19 +58,3 @@ average_pooling = function(img, stride = 4) {
   
   return(pooled_image)
 }
-
-random_projection = function(data) {
-  
-  X = as.matrix(data[,-1])
-  
-  random_matrix = RandPro::form_matrix(dim(X)[2],
-                                       RandPro::dimension(dim(X)[2],
-                                                          epsilon = 0.5),
-                                       JLT = TRUE, eps = 0.5)
-  reduced_data = X %*% random_matrix %>%
-    cbind(data.frame("label" = data$label), .)
-  
-  return(reduced_data)
-}
-
-

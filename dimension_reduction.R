@@ -26,36 +26,39 @@ source("dimension_reduction_functions.R")
 train = import_data("data/mnist_train.csv")
 test = import_data("data/mnist_test.csv")
 
-labels_train = data.frame("label" = train$label)
 labels_test = data.frame("label" = test$label)
 
-parameters = list(
-  "C" = list("0_1" = 1, "0_2" = 1, "0_3" = 10, "0_4" = 100, "0_5" = 1,
-             "0_6" = 1, "0_7" = 1, "0_8" = 1, "0_9" = 10, "1_2" = 10,
-             "1_3" = 0.1, "1_4" = 1, "1_5" = 1, "1_6" = 1, "1_7" = 10,
-             "1_8" = 10, "1_9" = 1, "2_3" = 10, "2_4" = 10, "2_5" = 1,
-             "2_6" = 1, "2_7" = 10, "2_8" = 1, "2_9" = 10, "3_4" = 1,
-             "3_5" = 10, "3_6" = 10, "3_7" = 10, "3_8" = 10, "3_9" = 10,
-             "4_5" = 0.1, "4_6" = 0.1, "4_7" = 10, "4_8" = 1, "4_9" = 10,
-             "5_6" = 1, "5_7" = 0.1, "5_8" = 1, "5_9" = 10, "6_7" = 0.1,
-             "6_8" = 1, "6_9" = 0.1, "7_8" = 1, "7_9" = 1, "8_9" = 1),
-  "sigma" = list("0_1" = 10^(-7), "0_2" = 10^(-7), "0_3" = 10^(-7),
-                 "0_4" = 10^(-8), "0_5" = 10^(-6), "0_6" = 10^(-7),
-                 "0_7" = 10^(-7), "0_8" = 10^(-6), "0_9" = 10^(-7),
-                 "1_2" = 10^(-8), "1_3" = 10^(-7), "1_4" = 10^(-7),
-                 "1_5" = 10^(-7), "1_6" = 10^(-7), "1_7" = 10^(-7),
-                 "1_8" = 10^(-7), "1_9" = 10^(-7), "2_3" = 10^(-7),
-                 "2_4" = 10^(-6), "2_5" = 10^(-7), "2_6" = 10^(-7),
-                 "2_7" = 10^(-7), "2_8" = 10^(-6), "2_9" = 10^(-8),
-                 "3_4" = 10^(-7), "3_5" = 10^(-7), "3_6" = 10^(-7),
-                 "3_7" = 10^(-7), "3_8" = 10^(-7), "3_9" = 10^(-7),
-                 "4_5" = 10^(-7), "4_6" = 10^(-7), "4_7" = 10^(-7),
-                 "4_8" = 10^(-7), "4_9" = 10^(-7), "5_6" = 10^(-6),
-                 "5_7" = 10^(-6), "5_8" = 10^(-6), "5_9" = 10^(-7),
-                 "6_7" = 10^(-7), "6_8" = 10^(-6), "6_9" = 10^(-7),
-                 "7_8" = 10^(-7), "7_9" = 10^(-6), "8_9" = 10^(-7)))
+num_samples = 7500
 
-#### Random Projection ####
+parameters = list(
+  "C" = list("0_1" = 10^(-0.5), "0_2" = 10^(0.5), "0_3" = 10^(0.5), "0_4" = 1,
+             "0_5" = 1, "0_6" = 10^(0.5), "0_7" = 1, "0_8" = 10^(0.5),
+             "0_9" = 1, "1_2" = 1, "1_3" = 1, "1_4" = 1, "1_5" = 10^(1.5),
+             "1_6" = 10^(-0.5), "1_7" = 10, "1_8" = 10^(0.5), "1_9" = 10^(0.5),
+             "2_3" = 10^(0.5), "2_4" = 10^(1.5), "2_5" = 1, "2_6" = 1,
+             "2_7" = 10^(0.5), "2_8" = 10^(0.5), "2_9" = 10, "3_4" = 1,
+             "3_5" = 10, "3_6" = 1, "3_7" = 10^(1.5), "3_8" = 10^(0.5),
+             "3_9" = 10^(0.5), "4_5" = 1, "4_6" = 10^(0.5), "4_7" = 10^(0.5),
+             "4_8" = 10^(0.5), "4_9" = 10, "5_6" = 10^(0.5), "5_7" = 10^(0.5),
+             "5_8" = 10^(0.5), "5_9" = 10^(0.5), "6_7" = 1, "6_8" = 10^(0.5),
+             "6_9" = 1, "7_8" = 1, "7_9" = 10^(0.5), "8_9" = 10^(0.5)),
+  "sigma" = list("0_1" = 10^(-7), "0_2" = 10^(-6.5), "0_3" = 10^(-6.5),
+                 "0_4" = 10^(-6.5), "0_5" = 10^(-6.5), "0_6" = 10^(-6.5),
+                 "0_7" = 10^(-6.5), "0_8" = 10^(-6.5), "0_9" = 10^(-6.5),
+                 "1_2" = 10^(-6.5), "1_3" = 10^(-6.5), "1_4" = 10^(-6.5),
+                 "1_5" = 10^(-7), "1_6" = 10^(-6.5), "1_7" = 10^(-6.5),
+                 "1_8" = 10^(-6.5), "1_9" = 10^(-6.5), "2_3" = 10^(-6.5),
+                 "2_4" = 10^(-7.5), "2_5" = 10^(-6), "2_6" = 10^(-6.5),
+                 "2_7" = 10^(-6.5), "2_8" = 10^(-6.5), "2_9" = 10^(-6.5),
+                 "3_4" = 10^(-6), "3_5" = 10^(-6.5), "3_6" = 10^(-6.5),
+                 "3_7" = 10^(-7), "3_8" = 10^(-6.5), "3_9" = 10^(-6.5),
+                 "4_5" = 10^(-6), "4_6" = 10^(-6.5), "4_7" = 10^(-6),
+                 "4_8" = 10^(-6.5), "4_9" = 10^(-6.5), "5_6" = 10^(-6.5),
+                 "5_7" = 10^(-6.5), "5_8" = 10^(-6.5), "5_9" = 10^(-7),
+                 "6_7" = 10^(-6), "6_8" = 10^(-6.5), "6_9" = 10^(-6.5),
+                 "7_8" = 10^(-6.5), "7_9" = 10^(-6.5), "8_9" = 10^(-6.5)))
+
+#### Create Random Projection ####
 start = proc.time()
 train_proj = random_projection(train)
 end = proc.time()
@@ -66,13 +69,13 @@ test_proj = random_projection(test)
 end = proc.time()
 time_proj_test = end - start
 
-#### Average Pooling ####
+#### Create Average Pooling ####
 start = proc.time()
 train_pooled = train[, -1] %>%
   apply(1, average_pooling) %>%
   t() %>%
   as.data.frame() %>%
-  cbind(labels_train, ., row.names = NULL)
+  cbind(data.frame("label" = train$label), ., row.names = NULL)
 end = proc.time()
 time_pool_train = end - start
 
@@ -81,33 +84,33 @@ test_pooled = test[, -1] %>%
   apply(1, average_pooling) %>%
   t() %>%
   as.data.frame() %>%
-  cbind(labels_test, ., row.names = NULL)
+  cbind(data.frame("label" = test$label), ., row.names = NULL)
 end = proc.time()
 time_pool_test = end - start
 
-#### Time: Create SVMs ####
+#### Create SVMs ####
 # Original
 start <- proc.time()
-svms = create_svms(train, num_samples = 1000, run_grid_search = FALSE,
+svms = create_svms(train, num_samples = num_samples, run_grid_search = FALSE,
                    parameters = parameters)
 end <- proc.time()
 time_creation_original <- end - start
 
 # Random Projection
 start <- proc.time()
-svms_proj = create_svms(train_proj, num_samples = 1000, run_grid_search = FALSE,
-                        parameters = parameters)
+svms_proj = create_svms(train_proj, num_samples = num_samples,
+                        run_grid_search = FALSE, parameters = parameters)
 end <- proc.time()
 time_creation_proj = end - start
 
 # Average Pooling
 start <- proc.time()
-svms_pooled = create_svms(train_pooled, num_samples = 1000,
+svms_pooled = create_svms(train_pooled, num_samples = num_samples,
                           run_grid_search = FALSE, parameters = parameters)
 end <- proc.time()
 time_creation_pooled = end - start
 
-#### Time: Cast and Count Votes ####
+#### Majority Voting ####
 # Original
 start = proc.time()
 mvs = majority_vote(svms, test)
@@ -138,7 +141,7 @@ acc_mvs_pooled = sum(score_pooled) / dim(test_pooled)[1]
 end = proc.time()
 time_mvs_pooled = end - start
 
-# Print times
+#### Print times ####
 print("Times:")
 print("Creating randomly projected data:")
 print(paste("Train:", time_proj_train["user.self"]))
@@ -170,7 +173,7 @@ print(paste("Average Pooling:", time_pool_train["user.self"]
             + time_creation_pooled["user.self"]
             + time_mvs_pooled["user.self"]))
 
-print("-----------------")
+#### Print Accuracies ####
 print("Accuracy MVS:")
 print(paste("Original:", acc_mvs))
 print(paste("Random Projection:", acc_mvs_proj))
@@ -196,8 +199,7 @@ for (i in 0:9) {
 }
 
 print("Individual accuracies:")
-accuracies_separate = rbind(unlist(accuracies_mvs), 
-                            unlist(accuracies_mvs_proj),
-                            unlist(accuracies_mvs_pooled))
-rownames(accuracies_separate) = c("Original", "Random Projection", "Average Pooling")
+accuracies_separate = rbind("Original" = unlist(accuracies_mvs), 
+                            "Random Projection" = unlist(accuracies_mvs_proj),
+                            "Average Pooling" = unlist(accuracies_mvs_pooled))
 print(accuracies_separate)

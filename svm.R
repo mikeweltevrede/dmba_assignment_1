@@ -19,7 +19,7 @@ labels_test = test$label
 c_vector = 10^(seq(-2, 2, length.out = 9))
 sigma_vector = 10^(seq(-8, -6, length.out = 5))
 
-num_samples = 1000
+num_samples = 7500
 run_grid_search = FALSE
 
 path_to_svm = "vars/SVMs.RData"
@@ -114,14 +114,18 @@ for (col in 1:dim(preds_matrix)[2]) {
 }
 
 #### Majority Vote ####
-# TODO: Split the predictions and voting part, since exercise 4 only needs the preds
-mvs = majority_vote(svms, test)
-predictions = mvs$predictions
-winners = mvs$winners
+# Load file, if available
+if (file.exists(path_to_mvs)) {
+  load(path_to_mvs)  
+} else {
+  mvs_train = majority_vote(svms, train)
+  mvs = majority_vote(svms, test)
+  save(mvs_train, mvs, file = path_to_mvs)
+}
 
 #### 2. ####
 # What is the accuracy of the majority vote system in this case?
-
+winners = mvs$winners
 score = (winners == labels_test)
 acc_mvs = sum(score) / dim(test)[1]
 
@@ -144,14 +148,6 @@ print(accuracies_mvs)
 # 15, or 20 nodes in this layer, and 10 output nodes to obtain a voting system.
 # For each H what is the accuracy of your prediction when using this system?
 # Pick the H performing best.
-
-# Load file, if available
-if (file.exists(path_to_mvs)) {
-  load(path_to_mvs)  
-} else {
-  mvs_train = majority_vote(svms, train)
-  save(mvs_train, mvs, file = path_to_mvs)
-}
 
 v_train = create_v(train)
 u_train = create_u(mvs_train)
@@ -192,7 +188,7 @@ keras_model = function(u_train, v_train, u_test, v_test, h, epochs,
 models = list()
 for (h in seq.int(5L, 20L, by = 5L)) {
   models[[as.character(h)]] = keras_model(u_train, v_train, u_test, v_test, h,
-                                          epochs = 15, batch_size = 32)
+                                          epochs = 15, batch_size = 64)
 }
 
 # Print the accuracies
@@ -207,12 +203,12 @@ plot(models[["10"]]$history)
 plot(models[["15"]]$history)
 plot(models[["20"]]$history)
 
-# We see that the accuracy for H=15 and H=20 is the best, with 0.9776 and 0.978
+# We see that the accuracy for H=15 and H=20 is the best, with 0.9866 and 0.9869
 # respectively. We also saw that the models started to overfit at around 12
 # epochs, with a batch-size of 32. To make this better, we do a grid search.
 H = c(15, 20)
-epochs = c(11, 12)
-batch_sizes = c(32, 64, 128)
+epochs = c(11, 12, 13)
+batch_sizes = c(64, 128)
 
 models = list()
 for (h in H) {
@@ -225,3 +221,5 @@ for (h in H) {
     }
   }
 }
+
+
